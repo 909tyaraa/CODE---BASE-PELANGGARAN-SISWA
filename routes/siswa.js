@@ -3,28 +3,37 @@ const app = express()
 
 app.use(express.json())
 
+// call siswa controller
 let siswaController = require("../controllers/siswaController")
 
-//memanggil middleware
-let tesmidware = require("../middleware/tesMidware")
-let authorize = require("../middleware/authorization")
-let uploadImg = require("../middleware/uploadImg")
+// call testMiddleware
+let testMiddleware = require("../middlewares/testMiddleware")
+let authorization = require("../middlewares/authorization")
+let uploadImage = require("../middlewares/uploadImage")
 
-//end point untuk data siswa
-app.get("/", 
-    [tesmidware.midware1, tesmidware.midware2, authorize.authorization], 
-    siswaController.getDataSiswa
-)
+// endpoint get data siswa
+app.get("/", [
+    
+    authorization.authorization
+],
+    siswaController.getDataSiswa)
 
-//end point untuk add siswa
-app.post("/", 
-    [uploadImg.upload.single(`image`), authorize.authorization], 
-    siswaController.addDataSiswa)
+// endpoint find siswa
+app.post("/find", [authorization.authorization], siswaController.findSiswa)
 
-//end point untuk edit siswa
-app.put("/:id_siswa", siswaController.editDataSiswa)
+// endpoint add data siswa
+app.post("/", [
+    uploadImage.upload.single(`image`), authorization.authorization
+], siswaController.addDataSiswa)
 
-//end point untuk delete siswa
-app.delete("/:id_siswa", siswaController.deleteDataSiswa)
+// endpoint edit siswa
+app.put("/:id_siswa", [
+    uploadImage.upload.single(`image`), authorization.authorization
+], siswaController.editDataSiswa)
+
+// endpoint delete siswa
+app.delete("/:id_siswa", [
+    authorization.authorization
+], siswaController.deleteDataSiswa)
 
 module.exports = app

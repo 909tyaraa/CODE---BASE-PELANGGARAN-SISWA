@@ -1,28 +1,129 @@
-const { response } = require("express");
-const { request } = require("http");
+// memanggil file model untuk siswa
+let modelSiswa = require("../models/index").siswa
+
+let path = require("path")
+let fs = require("fs")
 
 exports.getDataSiswa = (request, response) => {
-    return response.json({
-        message: "This function for get data siswa"
+    modelSiswa.findAll()
+        .then(result => {
+            return response.json(result)
+        })
+        .catch(error => {
+            return response.json({
+                message: error.message
+            })
+        })
+}
+
+exports.findSiswa = async (request, response) => {
+    let keyword = request.body.keyword
+
+    let sequelize = require(`sequelize`)
+    let Op = sequelize.Op
+
+    /** query = select * from siswa where nama like "%keyword%" or
+     * kelas like "%keyword%" or nis like "%keyword%"
+     * 
+     */
+    let dataSiswa = await modelSiswa.findAll({
+        where: {
+            [Op.or]: {
+                nama: { [Op.like]: `%${keyword}%` },
+                kelas: { [Op.like]: `%${keyword}%` },
+                nis: { [Op.like]: `%${keyword}%` }
+            }
+        }
     })
+
+    return response.json(dataSiswa)
 }
 
 exports.addDataSiswa = (request, response) => {
-    return response.json({
-        message: "This function for add data siswa"
-    })
+    if (!request.file) {
+        return response.json({
+            message: `Nothing to upload`
+        })
+    }
+    // tampung data request
+    let newSiswa = {
+        nama: request.body.nama,
+        kelas: request.body.kelas,
+        poin: request.body.poin,
+        nis: request.body.nis,
+        image: request.file.filename
+    }
+
+    modelSiswa.create(newSiswa)
+        .then(result => {
+            return response.json({
+                message: `Data siswa berhasil ditambahkan`
+            })
+        })
+        .catch(error => {
+            return response.json({
+                message: error.message
+            })
+        })
 }
 
-exports.editDataSiswa = (request, response) => {
-    let id_siswa = request.params.id_siswa
-    return response.json({
-        message: `This function for edit data siswa with ID ${id_siswa}`
-    })
+exports.editDataSiswa = async (request, response) => {
+    let id = request.params.id_siswa
+    let dataSiswa = {
+        nama: request.body.nama,
+        nis: request.body.nis,
+        poin: request.body.poin,
+        kelas: request.body.kelas
+    }
+
+    if (request.file) {
+        // jika edit menyertakan file gambar
+        let siswa = await modelSiswa.findOne({ where: { id_siswa: id } })
+        let oldFileName = siswa.image
+
+        // delete file
+        let location = path.join(__dirname, "../image", oldFileName)
+        fs.unlink(location, error => console.log(error))
+
+        // menyisipkan nama file baru ke dalam objek dataSiswa
+        dataSiswa.image = request.file.filename
+    }
+
+    modelSiswa.update(dataSiswa, { where: { id_siswa: id } })
+        .then(result => {
+            return response.json({
+                message: `Data siswa berhasil diubah`
+            })
+        })
+        .catch(error => {
+            return response.json({
+                message: error.message
+            })
+        })
 }
 
-exports.deleteDataSiswa = (request, response) => {
-    let id_siswa = request.params.id_siswa
-    return response.json({
-        message: `This function for delete data siswa with ID ${id_siswa}`
-    })
+exports.deleteDataSiswa = async (request, response) => {
+    let id = request.params.id_siswa
+
+    // ambil dulu data filename yg akan dihapus
+    let siswa = await modelSiswa.findOne({ where: { id_siswa: id } })
+    if (siswa) {
+        let oldFileName = siswa.image
+
+        // delete file
+        let location = path.join(__dirname, "../image", oldFileName)
+        fs.unlink(location, error => console.log(error))
+    }
+
+    modelSiswa.destroy({ where: { id_siswa: id } })
+        .then(result => {
+            return response.json({
+                message: `Data siswa berhasil dihapus`
+            })
+        })
+        .catch(error => {
+            return response.json({
+                message: error.message
+            })
+        })
 }

@@ -3,21 +3,23 @@ const app = express()
 
 app.use(express.json())
 
-let userController = require("../controllers/userController")
+const userController = require("../controllers/userController")
 
-//end point untuk data user
-app.get("/", userController.getDataUser)
+const userValidator = require("../middlewares/userValidator")
+const authorization = require("../middlewares/authorization")
 
-//end point untuk add user
-app.post("/", userController.addDataUser)
+app.get("/", [authorization.authorization], userController.getUser)
 
-//end point untuk edit user
-app.put("/:id_user", userController.editDataUser)
+app.post("/find",[authorization.authorization], userController.findUser)
 
-//end point untuk delete user
-app.delete("/:id_user", userController.deleteDataUser)
+app.post("/", [
+    authorization.authorization, userValidator.validate
+], userController.addUser)
 
-//autentikasi
+app.put("/:id_user", [
+    authorization.authorization, userValidator.validate
+], userController.updateUser)
+
+app.delete("/:id_user", [authorization.authorization], userController.deleteUser)
 app.post("/auth", userController.authentication)
-
 module.exports = app
